@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>90 Day Challenge</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f2f4f7;
+color:#222;
+}
+
+.container{
+max-width:600px;
+margin:auto;
+padding:20px;
+}
+
+.header{
+text-align:center;
+background:#111827;
+color:white;
+padding:25px 15px;
+border-radius:18px;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+padding:18px;
+border-radius:16px;
+margin-bottom:15px;
+box-shadow:0 3px 12px #00000010;
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+}
+
+.stat{
+text-align:center;
+background:#f9fafb;
+padding:12px;
+border-radius:12px;
+}
+
+.stat strong{
+display:block;
+font-size:22px;
+}
+
+.progress{
+height:14px;
+background:#e5e7eb;
+border-radius:10px;
+overflow:hidden;
+margin-top:10px;
+}
+
+.progress-bar{
+height:100%;
+width:0%;
+background:#22c55e;
+transition:.3s;
+}
+
+.habit{
+display:flex;
+align-items:center;
+gap:12px;
+padding:14px 0;
+border-bottom:1px solid #eee;
+}
+
+.habit input{
+width:23px;
+height:23px;
+accent-color:#22c55e;
+}
+
+button{
+width:100%;
+border:none;
+padding:13px;
+border-radius:10px;
+font-size:16px;
+cursor:pointer;
+margin-top:10px;
+}
+
+.primary{
+background:#2563eb;
+color:white;
+}
+
+.secondary{
+background:#111827;
+color:white;
+}
+
+.reset{
+background:#ef4444;
+color:white;
+}
+
+.history-item{
+padding:14px;
+border-bottom:1px solid #eee;
+}
+
+.history-item:last-child{
+border:none;
+}
+
+.completed{
+color:#16a34a;
+font-weight:bold;
+}
+
+.muted{
+color:#6b7280;
+font-size:14px;
+}
+
+.hidden{
+display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<h1>🔥 90 Day Challenge</h1>
+<p>Build discipline. Stay consistent.</p>
+<p id="today"></p>
+</div>
+
+<div class="card">
+<div class="stats">
+
+<div class="stat">
+<strong id="dayNumber">1</strong>
+Day
+</div>
+
+<div class="stat">
+<strong id="score">0/4</strong>
+Score
+</div>
+
+<div class="stat">
+<strong id="streak">0</strong>
+Streak
+</div>
+
+</div>
+
+<p>90 Day Progress</p>
+
+<div class="progress">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+
+<p id="progressText">0 / 90 days completed</p>
+</div>
+
+<div class="card">
+
+<h3 id="dayTitle">Day 1</h3>
+<p id="dateText" class="muted"></p>
+
+<div class="habit">
+<input type="checkbox" id="gym" onchange="saveDay()">
+<label for="gym">🏋️ Gym / Exercise</label>
+</div>
+
+<div class="habit">
+<input type="checkbox" id="adult" onchange="saveDay()">
+<label for="adult">🚫 No Adult Content</label>
+</div>
+
+<div class="habit">
+<input type="checkbox" id="junk" onchange="saveDay()">
+<label for="junk">🍔 No Junk Food</label>
+</div>
+
+<div class="habit">
+<input type="checkbox" id="sugar" onchange="saveDay()">
+<label for="sugar">🍬 No Added Sugar</label>
+</div>
+
+<p id="completion"></p>
+
+<button class="primary" onclick="showHistory()">
+📅 View My Records
+</button>
+
+</div>
+
+<div class="card hidden" id="historyCard">
+
+<h3>📚 My 90 Day Records</h3>
+
+<p class="muted">
+Your saved daily habit history
+</p>
+
+<div id="historyList"></div>
+
+<button class="secondary" onclick="closeHistory()">
+Close History
+</button>
+
+</div>
+
+<div class="card">
+<button class="reset" onclick="resetAll()">
+Reset All Records
+</button>
+</div>
+
+</div>
+
+<script>
+
+const startDate = new Date("2026-10-04T00:00:00");
+
+const habits = ["gym","adult","junk","sugar"];
+
+const habitNames = {
+gym:"🏋️ Gym / Exercise",
+adult:"🚫 No Adult Content",
+junk:"🍔 No Junk Food",
+sugar:"🍬 No Added Sugar"
+};
+
+function getDayNumber(){
+
+const today = new Date();
+today.setHours(0,0,0,0);
+
+const start = new Date(startDate);
+
+const difference =
+Math.floor((today-start)/(1000*60*60*24));
+
+return Math.min(90,Math.max(1,difference+1));
+}
+
+function dateForDay(day){
+
+const date = new Date(startDate);
+date.setDate(date.getDate()+day-1);
+
+return date.toLocaleDateString("en-IN",{
+day:"2-digit",
+month:"short",
+year:"numeric"
+});
+}
+
+function storageKey(day){
+return "challenge_day_"+day;
+}
+
+function getRecord(day){
+
+return JSON.parse(
+localStorage.getItem(storageKey(day)) || "{}"
+);
+}
+
+function getScore(day){
+
+const saved=getRecord(day);
+
+return habits.filter(h=>saved[h]).length;
+}
+
+function loadDay(){
+
+const day=getDayNumber();
+const saved=getRecord(day);
+
+habits.forEach(h=>{
+document.getElementById(h).checked=
+saved[h]||false;
+});
+
+document.getElementById("dayNumber").textContent=day;
+document.getElementById("dayTitle").textContent="Day "+day;
+document.getElementById("dateText").textContent=dateForDay(day);
+
+updateStats();
+}
+
+function saveDay(){
+
+const day=getDayNumber();
+const data={};
+
+habits.forEach(h=>{
+data[h]=document.getElementById(h).checked;
+});
+
+localStorage.setItem(
+storageKey(day),
+JSON.stringify(data)
+);
+
+updateStats();
+}
+
+function updateStats(){
+
+const day=getDayNumber();
+
+const score=habits.filter(h=>
+document.getElementById(h).checked
+).length;
+
+document.getElementById("score").textContent=score+"/4";
+
+let completed=0;
+
+for(let i=1;i<=90;i++){
+if(getScore(i)===4)completed++;
+}
+
+document.getElementById("progressBar").style.width=
+(completed/90*100)+"%";
+
+document.getElementById("progressText").textContent=
+completed+" / 90 days completed";
+
+let streak=0;
+
+for(let i=day;i>=1;i--){
+if(getScore(i)===4){
+streak++;
+}else{
+break;
+}
+}
+
+document.getElementById("streak").textContent=streak;
+
+const completion=document.getElementById("completion");
+
+if(score===4){
+completion.textContent="✅ Today's challenge completed!";
+completion.className="completed";
+}else{
+completion.textContent="Keep going — "+score+"/4 completed.";
+completion.className="";
+}
+}
+
+function showHistory(){
+
+const card=document.getElementById("historyCard");
+const list=document.getElementById("historyList");
+
+card.classList.remove("hidden");
+list.innerHTML="";
+
+let hasRecords=false;
+
+for(let i=90;i>=1;i--){
+
+const data=getRecord(i);
+
+if(!habits.some(h=>data[h]))continue;
+
+hasRecords=true;
+
+const score=getScore(i);
+
+const item=document.createElement("div");
+item.className="history-item";
+
+const title=document.createElement("strong");
+title.textContent="Day "+i+" — "+dateForDay(i);
+
+const scoreText=document.createElement("p");
+scoreText.textContent="Score: "+score+"/4";
+
+const details=document.createElement("p");
+details.className="muted";
+
+details.textContent=habits.map(h=>
+(data[h]?"✅ ":"⬜ ")+habitNames[h]
+).join("\n");
+
+details.style.whiteSpace="pre-line";
+
+const status=document.createElement("p");
+status.className=score===4?"completed":"muted";
+status.textContent=score===4?
+"Completed":"In Progress";
+
+item.append(title,scoreText,details,status);
+list.appendChild(item);
+}
+
+if(!hasRecords){
+list.textContent="No records saved yet. Start checking your daily habits!";
+}
+}
+
+function closeHistory(){
+document.getElementById("historyCard").classList.add("hidden");
+}
+
+function resetAll(){
+
+if(!confirm("Are you sure you want to delete all 90 day records?"))return;
+
+for(let i=1;i<=90;i++){
+localStorage.removeItem(storageKey(i));
+}
+
+loadDay();
+showHistory();
+}
+
+document.getElementById("today").textContent=
+new Date().toLocaleDateString("en-IN",{
+weekday:"long",
+day:"numeric",
+month:"long",
+year:"numeric"
+});
+
+loadDay();
+
+</script>
+
+</body>
+</html>
